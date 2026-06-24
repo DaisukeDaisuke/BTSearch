@@ -5,6 +5,7 @@ const INCREMENT = 0x269ec3n;
 const MASK64 = (1n << 64n) - 1n;
 const TWO32 = 1n << 32n;
 const MAX_ROWS = 5000n;
+const MAX_FRACTION_DIGITS = 10;
 const listById = id => document.getElementById(id);
 
 function nextState(seed) {
@@ -47,6 +48,9 @@ function parseFixedDecimal(id, label) {
   const text = listById(id).value.trim();
   if (!/^\d+(?:\.\d+)?$/.test(text)) throw new Error(`${label}は0以上の数値で入力してください。`);
   const [integer, fraction = ""] = text.split(".");
+  if (fraction.length > MAX_FRACTION_DIGITS) {
+    throw new Error(`${label}の小数は${MAX_FRACTION_DIGITS}桁までです（上位32-bitの精度上限）。`);
+  }
   return { value: BigInt(integer + fraction), digits: fraction.length, text };
 }
 
