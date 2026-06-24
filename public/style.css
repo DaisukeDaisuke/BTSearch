@@ -1,0 +1,106 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  width: min(52rem, calc(100% - 2rem));
+  margin: 1.5rem auto 5rem;
+}
+
+section {
+  margin-block: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: .75rem 1rem;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: block;
+}
+
+input:not([type="checkbox"]), select, button {
+  box-sizing: border-box;
+  font: inherit;
+  padding: .55rem .65rem;
+}
+
+input:not([type="checkbox"]), select {
+  width: 100%;
+  margin-top: .25rem;
+}
+
+input.has-value, select.has-value {
+  border-inline-start: .3rem solid Highlight;
+}
+
+.check {
+  margin-top: 1rem;
+}
+
+.check.active, .status.active {
+  font-weight: 650;
+}
+
+.actions {
+  display: flex;
+  gap: .5rem;
+  margin-block: 1rem;
+}
+
+.status {
+  min-height: 1.5rem;
+  margin-block: .75rem;
+}
+
+.observations {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: .4rem .75rem;
+  margin-block: 1rem;
+}
+
+.observation-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  align-items: center;
+}
+
+.observation-row select {
+  margin: 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border-bottom: 1px solid CanvasText;
+  padding: .45rem;
+  text-align: left;
+}
+
+button:disabled {
+  opacity: .55;
+}
+
+@media (max-width: 32rem) {
+  main { width: min(100% - 1rem, 52rem); }
+  .observations { grid-template-columns: repeat(2, 1fr); }
+}

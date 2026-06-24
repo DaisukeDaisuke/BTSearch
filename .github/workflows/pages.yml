@@ -1,0 +1,47 @@
+name: Build WebAssembly and deploy Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "webassembly"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install WebAssembly compiler
+        run: |
+          sudo apt-get update > /dev/null 2>&1
+          sudo apt-get install -y clang lld > /dev/null 2>&1
+
+      - name: Build WebAssembly
+        env:
+          OUTPUT_DIR: ${{ github.workspace }}/public
+        run: bash webassembly/build.sh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>乱数総当たりツール</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>乱数総当たりツール</h1>
+  <p>1以上の乱数をC++ / WebAssemblyで総当たりします。</p>
+
+  <section aria-labelledby="search-settings">
+    <h2 id="search-settings">探索設定</h2>
+    <div class="grid">
+      <label>開始seed<input type="text" id="seedStart" value="0x32700" inputmode="text"></label>
+      <label>終了seed<input type="text" id="seedEnd" value="0x327ff" inputmode="text"></label>
+      <label class="wide">検索範囲指定ショートカット
+        <select id="seedlist">
+          <option value="">選択なし</option>
+          <option value="32700,327ff">700-7ff (実機, JP)</option>
+          <option value="32600,328ff">600-8ff (実機, JP)</option>
+          <option value="31600,31fff">31600-31fff (実機, EU)</option>
+          <option value="31600,319ff">31600-319ff (実機, NA)</option>
+          <option value="28000,2ffff">28000-2ffff (DeSmuME)</option>
+          <option value="3c000,3dfff">3c000-3dfff (melonDS)</option>
+          <option value="16000,19fff">16000-19fff (No$GBA)</option>
+          <option value="16000,3ffff">16000-3ffff (全て)</option>
+        </select>
+      </label>
+      <label>1seed辺りの調査回数<input type="number" id="end" value="1000" min="1" max="4294967295"></label>
+      <label>表示上限<input type="number" id="maxCount" value="1000" min="1" max="99999"></label>
+      <label>Worker数<input type="number" id="workers" min="1" max="64"></label>
+      <label>1つめの項目の消費数（任意）<input type="number" id="nowCount" min="1" placeholder="未指定"></label>
+      <label>最後の項目の消費数（任意・優先）<input type="number" id="nowCount1" min="1" placeholder="未指定"></label>
+      <label>初期シード指定（任意）<input type="text" id="seed1" placeholder="例: 0x3272f"></label>
+      <label class="wide">初期シード指定ショートカット
+        <select id="shortcut">
+          <option value="">選択なし</option>
+          <option value="32741">ここ, レオノ (0x32741)</option>
+          <option value="3276c">よよ, ハイローズ (0x3276c)</option>
+          <option value="32763">こよこよ, りり (0x32763)</option>
+          <option value="3275c">こよここ, レオノ(アローラ) (0x3275c)</option>
+        </select>
+      </label>
+    </div>
+    <div id="activeFilters" class="status" aria-live="polite"></div>
+    <p id="prediction"></p>
+    <div class="actions">
+      <button id="reset" type="button">リセット</button>
+      <button id="runTop" type="button">開始</button>
+      <button id="cancel" type="button" disabled>停止</button>
+    </div>
+    <label>この入力を共有<input type="text" id="share" readonly></label>
+    <label class="check"><input type="checkbox" id="autostart"> 入力変更時に自動で開始し、候補が1件以下なら通知</label>
+  </section>
+
+  <section aria-labelledby="observations">
+    <h2 id="observations">観測値</h2>
+    <p>「よ」「こ」入力とドロップダウンは同期します。飛ばし入力はできません。</p>
+    <label>「よ」「こ」入力（最大50個）<input type="text" id="yoko" maxlength="50" placeholder="例: よこよここ"></label>
+    <div id="dropdowns" class="observations"></div>
+    <button id="runBottom" type="button">開始</button>
+  </section>
+
+  <section aria-labelledby="results-heading">
+    <h2 id="results-heading">結果</h2>
+    <p id="progress" class="status" aria-live="polite">待機中</p>
+    <p id="messages" aria-live="assertive"></p>
+    <div class="table-wrap">
+      <table id="table">
+        <thead><tr><th>seed</th><th>開始[F]</th><th>最終項目[F]</th><th>現在地[F]</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>使い方</h2>
+    <ul>
+      <li>起動時に天使界が夕方・夜ではなく、ロゴを再表示していない状態で使用します。</li>
+      <li>戦闘で「しらべる」を使い、「ようす」なら「よ」、「こうげき」なら「こ」を順番に入力します。</li>
+      <li>通常は20～23個程度入力して開始し、候補が1件になるまで観測値を追加します。</li>
+      <li>一致なしの場合は入力ミス、探索範囲、消費数、初期シードの有効な制限を確認してください。</li>
+      <li>従来仕様と同じく0Fではなく1Fから探索します。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
