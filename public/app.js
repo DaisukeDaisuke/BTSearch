@@ -18,7 +18,7 @@ self.onmessage = async ({ data }) => {
     const api = instance.exports;
     const resultPointer = api.result_buffer();
     const results = [];
-    const filtered = data.startFilter !== 0 || data.endFilter !== 0;
+    const filtered = data.filterFlags !== 0;
     const batchSize = filtered
       ? 4096
       : Math.max(1, Math.min(256, Math.floor(100000 / data.maxFrame)));
@@ -30,7 +30,7 @@ self.onmessage = async ({ data }) => {
       if (remaining <= 0) break;
       const count = api.search_range(
         begin, end, data.maxFrame, data.patternLow, data.patternHigh,
-        data.patternLength, data.startFilter, data.endFilter, remaining
+        data.patternLength, data.startFilter, data.endFilter, data.filterFlags, remaining
       );
       const view = new Uint32Array(api.memory.buffer, resultPointer, count * 3);
       for (let index = 0; index < count; ++index) {
@@ -201,7 +201,10 @@ function requestFromControls() {
   const requestedWorkers = Number.parseInt(byId("workers").value, 10);
   let startFilter = parseOptionalInteger("nowCount");
   const endFilter = parseOptionalInteger("nowCount1");
-  if (endFilter !== 0) startFilter = 0;
+  const hasStartFilter = byId("nowCount").value.trim() !== "";
+  const hasEndFilter = byId("nowCount1").value.trim() !== "";
+  if (hasEndFilter) startFilter = 0;
+  const filterFlags = hasEndFilter ? 2 : hasStartFilter ? 1 : 0;
   const fixedSeedText = byId("seed1").value.trim();
   const fixedSeed = fixedSeedText === "" ? 0 : parseHex(fixedSeedText);
 
@@ -212,11 +215,12 @@ function requestFromControls() {
   if (maxFrame < 1 || maxFrame > 0xffffffff) throw new Error("調査回数は1以上にしてください。");
   if (maxCount < 1 || maxCount >= RESULT_CAPACITY) throw new Error("表示上限は1～99999にしてください。");
   if (requestedWorkers < 1 || requestedWorkers > 64) throw new Error("Worker数は1～64にしてください。");
-  if ((byId("nowCount").value.trim() && startFilter < 1) ||
-      (byId("nowCount1").value.trim() && endFilter < 1)) {
-    throw new Error("消費数は1以上、または未指定にしてください。");
+  if ((hasStartFilter && startFilter < 0) || (hasEndFilter && endFilter < 0)) {
+    throw new Error("消費数は0以上、または未指定にしてください。");
   }
-  if (startFilter > maxFrame || endFilter > maxFrame) throw new Error("消費数は調査回数以内にしてください。");
+  if ((hasStartFilter && startFilter >= maxFrame) || (hasEndFilter && endFilter >= maxFrame)) {
+    throw new Error("消費数は調査回数未満にしてください（1000回なら0～999F）。");
+  }
   if (fixedSeedText && (fixedSeed < seedStart || fixedSeed > seedEnd)) throw new Error("初期シード指定は探索範囲内にしてください。");
 
   const status = observationString();
@@ -224,7 +228,7 @@ function requestFromControls() {
   return {
     seedStart: fixedSeedText ? fixedSeed : seedStart,
     seedEnd: fixedSeedText ? fixedSeed : seedEnd,
-    maxFrame, maxCount, requestedWorkers, startFilter, endFilter, pattern
+    maxFrame, maxCount, requestedWorkers, startFilter, endFilter, filterFlags, pattern
   };
 }
 
@@ -250,6 +254,10 @@ function getWasmModule() {
   return wasmModulePromise;
 }
 
+function elapsedSeconds(startedAt) {
+  return `${((performance.now() - startedAt) / 1000).toFixed(3)}秒`;
+}
+
 function renderResults(results, request, automatic) {
   results.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const exceeded = results.length > request.maxCount;
@@ -263,6 +271,15 @@ function renderResults(results, request, automatic) {
       cell.textContent = value;
       row.append(cell);
     }
+    const linkCell = document.createElement("td");
+    const link = document.createElement("a");
+    const listEnd = BigInt(startFrame) + 500n;
+    link.href = `list.html?seed=${seed.toString(16)}&start=${endFrame + 1}&end=${listEnd}`;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "開く";
+    linkCell.append(link);
+    row.append(linkCell);
     fragment.append(row);
   }
   tbody.replaceChildren(fragment);
@@ -290,6 +307,7 @@ async function runSearch(automatic = false) {
   const progress = new Array(workerCount).fill(0);
   const allResults = [];
   let finished = 0;
+  const startedAt = performance.now();
 
   byId("table").tBodies[0].replaceChildren();
   byId("messages").textContent = "";
@@ -318,14 +336,14 @@ async function runSearch(automatic = false) {
           allResults.push(...data.results);
           if (allResults.length >= resultLimit) {
             renderResults(allResults, request, automatic);
-            stopSearch(`表示上限到達: ${progress.reduce((sum, value) => sum + value, 0).toLocaleString()} seedsを探索`);
+            stopSearch(`表示上限到達: ${progress.reduce((sum, value) => sum + value, 0).toLocaleString()} seedsを探索 / ${elapsedSeconds(startedAt)}`);
             return;
           }
           ++finished;
           if (finished === workerCount) {
             renderResults(allResults, request, automatic);
             const completed = progress.reduce((sum, value) => sum + value, 0);
-            stopSearch(`完了: ${completed.toLocaleString()} seeds / Worker ${workerCount}`);
+            stopSearch(`完了: ${completed.toLocaleString()} seeds / Worker ${workerCount} / ${elapsedSeconds(startedAt)}`);
           }
         } else if (data.type === "error") {
           stopSearch("エラーで停止しました");
@@ -346,6 +364,7 @@ async function runSearch(automatic = false) {
         patternLength: request.pattern.length,
         startFilter: request.startFilter,
         endFilter: request.endFilter,
+        filterFlags: request.filterFlags,
         resultLimit
       });
     }

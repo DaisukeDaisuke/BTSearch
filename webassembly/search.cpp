@@ -18,7 +18,7 @@ inline uint64_t next(uint64_t seed) {
     return seed * kMultiplier + kIncrement;
 }
 
-uint64_t advance(uint64_t seed, uint32_t count) {
+uint64_t advance(uint64_t seed, uint64_t count) {
     uint64_t multiplier = kMultiplier;
     uint64_t increment = kIncrement;
     uint64_t accumulated_multiplier = 1;
@@ -67,6 +67,7 @@ __attribute__((used)) uint32_t search_range(
     uint32_t pattern_length,
     uint32_t start_filter,
     uint32_t end_filter,
+    uint32_t filter_flags,
     uint32_t result_limit) {
     if (seed_start > seed_end || result_limit == 0) {
         return 0;
@@ -83,43 +84,51 @@ __attribute__((used)) uint32_t search_range(
     uint32_t count = 0;
 
     for (uint32_t initial = seed_start;; ++initial) {
-        uint32_t target_frame = end_filter;
-        if (target_frame == 0 && start_filter != 0) {
-            target_frame = start_filter + pattern_length - 1U;
+        const bool has_end_filter = (filter_flags & 2U) != 0;
+        const bool has_start_filter = (filter_flags & 1U) != 0 && !has_end_filter;
+        uint64_t target_frame_wide = end_filter;
+        if (has_start_filter) {
+            target_frame_wide = pattern_length == 0
+                ? (start_filter == 0 ? UINT64_MAX : static_cast<uint64_t>(start_filter) - 1U)
+                : static_cast<uint64_t>(start_filter) + pattern_length - 1U;
         }
 
-        if (target_frame != 0) {
-            const uint32_t start_frame = target_frame - pattern_length + 1U;
-            if (target_frame <= max_frame &&
-                (pattern_length == 0 || (target_frame >= pattern_length && start_frame >= 1))) {
-                bool matches = true;
-                if (pattern_length != 0) {
-                    uint64_t observed_seed = advance(initial, start_frame + 1U);
-                    uint64_t window = 0;
-                    for (uint32_t index = 0; index < pattern_length; ++index) {
-                        window = ((window << 1U) | observed_bit(observed_seed)) & mask;
-                        observed_seed = next(observed_seed);
+        if (has_start_filter || has_end_filter) {
+            if (target_frame_wide <= UINT32_MAX) {
+                const uint32_t target_frame = static_cast<uint32_t>(target_frame_wide);
+                const uint32_t start_frame = target_frame - pattern_length + 1U;
+                if (target_frame < max_frame &&
+                    (pattern_length == 0 || static_cast<uint64_t>(target_frame) + 1U >= pattern_length)) {
+                    bool matches = true;
+                    if (pattern_length != 0) {
+                        uint64_t observed_seed = advance(initial, static_cast<uint64_t>(start_frame) + 1U);
+                        uint64_t window = 0;
+                        for (uint32_t index = 0; index < pattern_length; ++index) {
+                            window = ((window << 1U) | observed_bit(observed_seed)) & mask;
+                            observed_seed = next(observed_seed);
+                        }
+                        matches = window == pattern;
                     }
-                    matches = window == pattern;
-                }
-                if (matches && !add_result(count, result_limit, initial, start_frame, target_frame)) {
-                    return count;
+                    if (matches && !add_result(count, result_limit, initial, start_frame, target_frame)) {
+                        return count;
+                    }
                 }
             }
         } else {
-            uint64_t observed_seed = next(next(initial));
+            uint64_t observed_seed = next(initial);
             uint64_t window = 0;
-            for (uint32_t frame = 1; frame <= max_frame; ++frame) {
+            for (uint32_t frame = 0;; ++frame) {
                 window = ((window << 1U) | observed_bit(observed_seed)) & mask;
                 observed_seed = next(observed_seed);
-                if (pattern_length != 0 && frame < pattern_length) {
-                    continue;
-                }
-                if (pattern_length == 0 || window == pattern) {
+                if ((pattern_length == 0 || static_cast<uint64_t>(frame) + 1U >= pattern_length) &&
+                    (pattern_length == 0 || window == pattern)) {
                     const uint32_t start_frame = frame - pattern_length + 1U;
                     if (!add_result(count, result_limit, initial, start_frame, frame)) {
                         return count;
                     }
+                }
+                if (static_cast<uint64_t>(frame) + 1U >= max_frame) {
+                    break;
                 }
             }
         }

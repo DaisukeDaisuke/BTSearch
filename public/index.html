@@ -11,7 +11,7 @@
 <body>
 <main>
   <h1>乱数総当たりツール</h1>
-  <p>1以上の乱数をC++ / WebAssemblyで総当たりします。</p>
+  <p>0F以上の乱数をC++ / WebAssemblyで総当たりします。<a href="list.html" target="_blank" rel="noopener">乱数表を開く</a></p>
 
   <section aria-labelledby="search-settings">
     <h2 id="search-settings">探索設定</h2>
@@ -31,11 +31,11 @@
           <option value="16000,3ffff">16000-3ffff (全て)</option>
         </select>
       </label>
-      <label>1seed辺りの調査回数<input type="number" id="end" value="1000" min="1" max="4294967295"></label>
+      <label>1seed辺りの調査回数（0Fから指定回数）<input type="number" id="end" value="1000" min="1" max="4294967295"></label>
       <label>表示上限<input type="number" id="maxCount" value="1000" min="1" max="99999"></label>
       <label>Worker数<input type="number" id="workers" min="1" max="64"></label>
-      <label>1つめの項目の消費数（任意）<input type="number" id="nowCount" min="1" placeholder="未指定"></label>
-      <label>最後の項目の消費数（任意・優先）<input type="number" id="nowCount1" min="1" placeholder="未指定"></label>
+      <label>1つめの項目の消費数（任意）<input type="number" id="nowCount" min="0" max="4294967294" placeholder="未指定"></label>
+      <label>最後の項目の消費数（任意・優先）<input type="number" id="nowCount1" min="0" max="4294967294" placeholder="未指定"></label>
       <label>初期シード指定（任意）<input type="text" id="seed1" placeholder="例: 0x3272f"></label>
       <label class="wide">初期シード指定ショートカット
         <select id="shortcut">
@@ -50,9 +50,9 @@
     <div id="activeFilters" class="status" aria-live="polite"></div>
     <p id="prediction"></p>
     <div class="actions">
-      <button id="reset" type="button">リセット</button>
-      <button id="runTop" type="button">開始</button>
+      <button id="runTop" class="primary" type="button">開始</button>
       <button id="cancel" type="button" disabled>停止</button>
+      <button id="reset" class="danger" type="button">リセット</button>
     </div>
     <label>この入力を共有<input type="text" id="share" readonly></label>
     <label class="check"><input type="checkbox" id="autostart"> 入力変更時に自動で開始し、候補が1件以下なら通知</label>
@@ -63,7 +63,7 @@
     <p>「よ」「こ」入力とドロップダウンは同期します。飛ばし入力はできません。</p>
     <label>「よ」「こ」入力（最大50個）<input type="text" id="yoko" maxlength="50" placeholder="例: よこよここ"></label>
     <div id="dropdowns" class="observations"></div>
-    <button id="runBottom" type="button">開始</button>
+    <button id="runBottom" class="primary" type="button">開始</button>
   </section>
 
   <section aria-labelledby="results-heading">
@@ -72,7 +72,7 @@
     <p id="messages" aria-live="assertive"></p>
     <div class="table-wrap">
       <table id="table">
-        <thead><tr><th>seed</th><th>開始[F]</th><th>最終項目[F]</th><th>現在地[F]</th></tr></thead>
+        <thead><tr><th>seed</th><th>開始[F]</th><th>最終項目[F]</th><th>現在地[F]</th><th>乱数表</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -85,7 +85,7 @@
       <li>戦闘で「しらべる」を使い、「ようす」なら「よ」、「こうげき」なら「こ」を順番に入力します。</li>
       <li>通常は20～23個程度入力して開始し、候補が1件になるまで観測値を追加します。</li>
       <li>一致なしの場合は入力ミス、探索範囲、消費数、初期シードの有効な制限を確認してください。</li>
-      <li>従来仕様と同じく0Fではなく1Fから探索します。</li>
+      <li>0Fから探索します。開始F・最終Fには0も指定できます。</li>
     </ul>
   </section>
 </main>
