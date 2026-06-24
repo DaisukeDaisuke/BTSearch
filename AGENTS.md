@@ -211,12 +211,11 @@ gh codespace stop -c <name>
 
 ## デバッグ・ビルド方針
 
-- Chrome MCPでテストする場合は、Codespaceでビルドして `public/desmume.js` をローカルへ転送してからテストする。
+- Chrome MCPでテストする場合は、Codespaceでビルドしてwebassemblyをローカルへ転送してからテストする。
 - ソースを修正した場合は、ローカルで `apply_patch` を適用してから `gh codespace cp -e` でCodespaceへ転送し、Codespace上でビルドする。
 - ファイルの中身を応答に復唱しない。
 - スクリーンショットはcanvasだけで取る。canvasサイズはトークン消費を抑えるため1倍にする。ユーザーが詳細にバグを指定した場合は、ピクセル検査スクリプトを使う。
 - GitHub Pagesへ毎回デプロイしない。HTML変更や軽い確認はローカル/プレビューサーバーで高速に回す。
-- C++/WASM変更の開発では `webassembly/build_safe_heap.sh` (クラッシュ時、cpp側スタックトレースありモード) と `webassembly/build_sanitize.sh` を積極的に使う。
 - GitHub Actionsでデプロイする場合は、最終段階でまとめて行い、cache-bustする。
 - Actions完了待ちは実デプロイを見たいなら、次のコマンドで待つ: `gh run list --repo DaisukeDaisuke/desmume_webassembly --branch main --limit 3` で対象runを確認し、`gh run watch <run-id> --repo DaisukeDaisuke/desmume_webassembly --exit-status` で終了まで待つ。
 - Codespaceでのbuildと構文チェックは本番Actionsほど重要ではない。軽い変更は本番環境で確認してよい。ただしビルドはリアルタイムで約5分かかるため、複数の問題をまとめて確認する。

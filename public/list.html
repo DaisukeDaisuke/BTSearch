@@ -12,7 +12,7 @@
 <main class="list-main">
   <h1>乱数表</h1>
   <p><a href="index.html">総当たりツールへ戻る</a></p>
-  <p>開始Fへ直接ジャンプします。6400億Fなどの大きな値も先頭から生成しません。表の値はクリックすると選択できます。</p>
+  <p>開始Fへ直接ジャンプします。6400億Fなどの大きな値も先頭から生成しません。表はクリックで1行、Ctrl/Cmd+クリックで複数行を選択できます。</p>
 
   <section aria-labelledby="list-settings">
     <h2 id="list-settings">表示設定</h2>
@@ -20,11 +20,11 @@
       <label>初期seed<input id="listSeed" type="text" value="0x32769"></label>
       <label>開始F<input id="listStart" type="text" value="0" inputmode="numeric"></label>
       <label>終了F（最大5000行）<input id="listEnd" type="text" value="100" inputmode="numeric"></label>
-      <label>倍率 max（任意精度整数）<input id="listMax" type="text" value="100" inputmode="numeric"></label>
+      <label>倍率 max（任意精度小数）<input id="listMax" type="text" value="100" inputmode="decimal"></label>
       <label class="wide">整数化式
         <select id="listFormula">
-          <option value="compat">互換式: floor(top32 × max ÷ 2^32)</option>
           <option value="exact">2^32−1式: floor(top32 × max ÷ (2^32−1))</option>
+          <option value="compat">互換式: floor(top32 × max ÷ 2^32)</option>
         </select>
       </label>
     </div>
@@ -35,7 +35,7 @@
 
   <div class="table-wrap list-table-wrap">
     <table id="randomTable">
-      <thead><tr><th>F</th><th>64-bit乱数</th><th>上位32-bit</th><th>整数値</th><th>よ／こ</th></tr></thead>
+      <thead><tr><th>F</th><th>64-bit乱数</th><th>上位32-bit</th><th>値</th><th>よ／こ</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>

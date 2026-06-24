@@ -128,9 +128,13 @@ button:disabled {
   min-width: 52rem;
 }
 
-.selectable {
-  cursor: text;
-  user-select: all;
+#randomTable tbody tr {
+  cursor: pointer;
+}
+
+#randomTable tbody tr.selected td {
+  color: HighlightText;
+  background: Highlight;
 }
 
 @media (max-width: 32rem) {

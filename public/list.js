@@ -43,18 +43,35 @@ function parseDecimal(id, label) {
   return BigInt(text);
 }
 
-function selectCell(event) {
-  const selection = getSelection();
-  const range = document.createRange();
-  range.selectNodeContents(event.currentTarget);
-  selection.removeAllRanges();
-  selection.addRange(range);
+function parseFixedDecimal(id, label) {
+  const text = listById(id).value.trim();
+  if (!/^\d+(?:\.\d+)?$/.test(text)) throw new Error(`${label}は0以上の数値で入力してください。`);
+  const [integer, fraction = ""] = text.split(".");
+  return { value: BigInt(integer + fraction), digits: fraction.length, text };
 }
 
-function updateListUrl(seed, start, end, max, formula) {
+function formatFixed(value, digits) {
+  const text = value.toString().padStart(digits + 1, "0");
+  return digits === 0 ? text : `${text.slice(0, -digits)}.${text.slice(-digits)}`;
+}
+
+function selectRow(event) {
+  const row = event.currentTarget;
+  if (!event.ctrlKey && !event.metaKey) {
+    row.parentElement.querySelectorAll(".selected").forEach(selected => {
+      selected.classList.remove("selected");
+      selected.setAttribute("aria-selected", "false");
+    });
+  }
+  const selected = !row.classList.contains("selected");
+  row.classList.toggle("selected", selected);
+  row.setAttribute("aria-selected", String(selected));
+}
+
+function updateListUrl(seed, start, end, maxText, formula) {
   const params = new URLSearchParams({
     seed: seed.toString(16), start: start.toString(), end: end.toString(),
-    max: max.toString(), formula
+    max: maxText, formula
   });
   history.replaceState({}, "", `${location.pathname}?${params}`);
 }
@@ -65,7 +82,7 @@ function renderList() {
     const seed = parseSeed(listById("listSeed").value);
     const start = parseDecimal("listStart", "開始F");
     const end = parseDecimal("listEnd", "終了F");
-    const max = parseDecimal("listMax", "倍率 max");
+    const max = parseFixedDecimal("listMax", "倍率 max");
     const formula = listById("listFormula").value;
     if (end < start) throw new Error("終了Fは開始F以上にしてください。");
     if (end - start + 1n > MAX_ROWS) throw new Error(`一度に表示できるのは${MAX_ROWS}行までです。`);
@@ -75,29 +92,29 @@ function renderList() {
     const fragment = document.createDocumentFragment();
     for (let frame = start; frame <= end; ++frame) {
       const top = state >> 32n;
-      const scaled = top * max / denominator;
+      const scaled = top * max.value / denominator;
       const compatiblePercent = top * 100n / TWO32;
       const row = document.createElement("tr");
       const values = [
         frame.toString(),
         `0x${state.toString(16).padStart(16, "0")}`,
         `0x${top.toString(16).padStart(8, "0")}`,
-        scaled.toString(),
+        formatFixed(scaled, max.digits),
         (compatiblePercent & 1n) === 0n ? "よ (0)" : "こ (1)"
       ];
       for (const value of values) {
         const cell = document.createElement("td");
-        cell.className = "selectable";
         cell.textContent = value;
-        cell.addEventListener("click", selectCell);
         row.append(cell);
       }
+      row.setAttribute("aria-selected", "false");
+      row.addEventListener("click", selectRow);
       fragment.append(row);
       state = nextState(state);
     }
     listById("randomTable").tBodies[0].replaceChildren(fragment);
     listById("listStatus").textContent = `${(end - start + 1n).toString()}行を${((performance.now() - startedAt) / 1000).toFixed(3)}秒で表示しました。`;
-    updateListUrl(seed, start, end, max, formula);
+    updateListUrl(seed, start, end, max.text, formula);
   } catch (error) {
     listById("listStatus").textContent = error.message;
   }
