@@ -54,6 +54,7 @@ let wasmModulePromise = null;
 let activeRun = 0;
 let activeWorkers = [];
 let autoStartTimer = 0;
+let yokoComposing = false;
 
 const byId = id => document.getElementById(id);
 const controls = ["seedStart", "seedEnd", "end", "maxCount", "workers", "nowCount", "nowCount1", "seed1"];
@@ -184,8 +185,7 @@ function observationChanged() {
 }
 
 function updateFromYoko() {
-  const normalized = byId("yoko").value.replace(/[^よこ]/g, "").slice(0, OBSERVATION_COUNT);
-  if (normalized !== byId("yoko").value) byId("yoko").value = normalized;
+  const normalized = (byId("yoko").value.match(/[よこ]/g) || []).join("").slice(0, OBSERVATION_COUNT);
   for (let index = 0; index < OBSERVATION_COUNT; ++index) {
     const character = normalized[index] || "";
     byId(`menu${index}`).value = character === "よ" ? "0" : character === "こ" ? "1" : "";
@@ -394,7 +394,14 @@ function initialize() {
     if (byId("shortcut").value) byId("seed1").value = `0x${byId("shortcut").value}`;
     updateUrl();
   });
-  byId("yoko").addEventListener("input", updateFromYoko);
+  byId("yoko").addEventListener("compositionstart", () => { yokoComposing = true; });
+  byId("yoko").addEventListener("compositionend", () => {
+    yokoComposing = false;
+    updateFromYoko();
+  });
+  byId("yoko").addEventListener("input", event => {
+    if (!yokoComposing && !event.isComposing) updateFromYoko();
+  });
   byId("runTop").addEventListener("click", () => runSearch(false));
   byId("runBottom").addEventListener("click", () => runSearch(false));
   byId("cancel").addEventListener("click", () => stopSearch());
