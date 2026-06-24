@@ -20,7 +20,7 @@
       <label>初期seed<input id="listSeed" type="text" value="0x32769"></label>
       <label>開始F<input id="listStart" type="text" value="0" inputmode="numeric"></label>
       <label>終了F（最大5000行）<input id="listEnd" type="text" value="100" inputmode="numeric"></label>
-      <label>倍率 max（小数10桁まで）<input id="listMax" type="text" value="100" inputmode="decimal" pattern="[0-9]+(?:\.[0-9]{1,10})?"></label>
+      <label>倍率 max（小数10桁まで）<input id="listMax" type="text" value="100.0000" inputmode="decimal" pattern="[0-9]+(?:\.[0-9]{1,10})?"></label>
       <label class="wide">整数化式
         <select id="listFormula">
           <option value="exact">2^32−1式: floor(top32 × max ÷ (2^32−1))</option>
