@@ -34,6 +34,17 @@ jobs:
           OUTPUT_DIR: ${{ github.workspace }}/public
         run: bash webassembly/build.sh
 
+      - name: Install JS minifier
+        run: |
+          npm install -g terser
+
+      - name: Minify JavaScript files
+        run: |
+          find public -maxdepth 1 -name "*.js" | while read f; do
+            terser "$f" -o "$f" --compress --mangle
+            echo "Minified: $f"
+          done
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
