@@ -91,17 +91,18 @@ function renderList() {
     if (end < start) throw new Error("終了Fは開始F以上にしてください。");
     if (end - start + 1n > MAX_ROWS) throw new Error(`一度に表示できるのは${MAX_ROWS}行までです。`);
 
-    let state = advanceState(seed, start + 1n);
+    let state = advanceState(seed, start);
     const denominator = formula === "exact" ? TWO32 - 1n : TWO32;
     const fragment = document.createDocumentFragment();
     for (let frame = start; frame <= end; ++frame) {
-      const top = state >> 32n;
+      const valueState = nextState(state);
+      const top = valueState >> 32n;
       const scaled = top * max.value / denominator;
       const compatiblePercent = top * 100n / TWO32;
       const row = document.createElement("tr");
       const values = [
         frame.toString(),
-        `0x${state.toString(16).padStart(16, "0")}`,
+        `0x${state.toString(16)}`,
         `0x${top.toString(16).padStart(8, "0")}`,
         formatFixed(scaled, max.digits),
         (compatiblePercent & 1n) === 0n ? "よ (0)" : "こ (1)"
@@ -114,7 +115,7 @@ function renderList() {
       row.setAttribute("aria-selected", "false");
       row.addEventListener("click", selectRow);
       fragment.append(row);
-      state = nextState(state);
+      state = valueState;
     }
     listById("randomTable").tBodies[0].replaceChildren(fragment);
     listById("listStatus").textContent = `${(end - start + 1n).toString()}行を${((performance.now() - startedAt) / 1000).toFixed(3)}秒で表示しました。`;
