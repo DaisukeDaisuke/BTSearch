@@ -25,7 +25,8 @@
 - `AGENTS.md`、`handoff.md`、`system.md` は作業前後の重要情報源として扱う。実装・デバッグ作業では `handoff.md` も読むこと。
 - handoff.mdに実装の詳細を書き、長期記憶として扱う。system.mdは、方針として扱う。これらは存在しなければ新規作成する。
 - sourceをgit diffの対象にしない。
-- 
+- Since using Clang, LLD, and Clang++ for WebAssembly builds is overwhelmingly faster, please consider whether it is possible to complete the build process using that toolchain.
+
 ## ユーザー変更の扱い
 
 - PLEASE DO NOT RESTORE the differences that I deleted for my own convenience.
