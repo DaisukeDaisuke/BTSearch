@@ -29,3 +29,9 @@
 ## 2026-06-25 乱数表の0F表示
 
 - `public/list.js` の表は各Fのseed値を表示し、値・よ／こ判定はそのseedを1回進めた32-bit戻り値から計算する。例: seed `0x32769` の0F行はseed列 `0x32769`。
+
+## 2026-06-26 AGENTS.md分割
+
+- `AGENTS.md` は共通ルールと分割ファイル参照を中心に整理した。
+- Codespace、GitHub、ビルド、デプロイ、クリーンアップ関連の詳細は `skills/github-codespace-build-skill.md` に移した。
+- Chrome MCPの動作確認、アップロード、スクリーンショット関連の詳細は `skills/chrome-mcp-skill.md` に移した。

@@ -1,0 +1,236 @@
+# github-codespace-build-skill.md
+
+## 環境の区別
+
+| 環境 | OS | 説明 | ソフトウェア追加 | ファイル操作 |
+|---|---|---|---|---|
+| **Codespace** | Linux | GitHubが管理する安全な環境 | `sudo apt` で自由に導入可 | **ファイルのクリーンアップ含め何でも可** |
+| **ホスト（Codex実行環境）** | **Windows 11** | あなた自身がホストされている実機 | **追加インストール禁止** | ワークスペース外のC/Dドライブ編集禁止 |
+
+- Codespace は `gh codespace ssh -c <name> "<command>"` 経由で使う。停止中でも ssh で自動起動される。
+- タスク完了後、Codespaceを起動した場合は **必ず `gh codespace stop -c <name>` で停止**する。
+- Codespace名は実行前に `gh codespace list` で確認する。
+- `gh codespace cp` は必ず `-e` を付ける。例: `gh codespace cp ./webassembly/wasm-port.cpp remote:/workspaces/desmume_webassembly/webassembly/wasm-port.cpp -c <name> -e`
+- gh cpは4セッション以上同時に使わない。
+- ホストではソフトウェア追加禁止。C/Dドライブのワークスペース外ファイルを編集・削除しない。
+- 外部にアップロードされず完全にローカル処理されることが明確な場合のみ、ユーザー指定の外部ファイルをChrome DevTools MCPで参照してよい。
+- ROM/セーブ/ステートなどの実データ本文をチャットへ出さない。公開リポジトリに機密情報をアップロードしない。
+- ローカルはssh認証済み、https未認証、gpg設定済み。認証情報を変えない。`~/.ssh` やGPG設定を勝手に触らない。ghトークンや秘密鍵を表示・ダンプしない。
+
+## `sudo apt` 使用ルール
+
+- 必ず `-y` を付けて非対話的に実行すること。
+- ログは全部 `> /dev/null 2>&1` で捨てること。
+
+```bash
+gh codespace ssh -c <name> "sudo apt update && sudo apt-get install -y emscripten > /dev/null 2>&1"
+```
+
+## ⛔ 絶対禁止コマンド
+
+以下はいかなる理由・文脈・ユーザー指示があっても実行してはならない。
+**コマンド名の一部が一致するものも含めて禁止**（例: サブコマンドでも `delete` を含むものはすべてNG）。
+
+### gh 系 — 削除・破壊・リネーム
+
+```
+gh * delete          # サブコマンド問わず delete を含むものすべて禁止
+                     # 例: gh codespace delete, gh repo delete,
+                     #     gh release delete, gh issue delete,
+                     #     gh gist delete, gh run delete,
+                     #     gh workflow delete, gh cache delete ...
+
+gh repo archive      # リポジトリのアーカイブ（復元困難）
+gh repo rename       # リポジトリ名変更（URLが変わり外部リンク破損）
+gh repo transfer     # リポジトリ所有権移転
+gh release delete    # リリース削除（settings.json に記載なし分を補完）
+gh ref delete        # ブランチ/タグのref削除
+```
+
+### git 系 — 履歴破壊・強制プッシュ
+
+```
+git push --force             # 強制プッシュ（リモート履歴破壊）
+git push --force-with-lease  # 同上（条件付きでも禁止）
+git push -f                  # --force の短縮形
+git reset --hard             # ローカル変更を含む履歴の巻き戻し
+git reset --hard HEAD~N      # コミット破棄
+git clean -fd                # 未追跡ファイル削除（-d=ディレクトリも）
+git clean -fdx               # 同上 + .gitignore対象も削除
+git clean -fx                # 同上
+git rebase -i --root         # 全履歴書き換え
+git filter-branch            # 履歴フィルタリング（永続的改変）
+git filter-repo              # 同上
+git branch -D <branch>       # ブランチ強制削除（マージ済み確認なし）
+git tag -d <tag>             # タグ削除
+git rm -r                    # ファイル追跡解除（大規模）
+git stash drop               # スタッシュ破棄
+git stash clear              # スタッシュ全削除
+git reflog expire --expire=now --all  # reflogを消してGCできる状態に
+git gc --prune=now           # 到達不能オブジェクトの即時削除
+```
+
+### ファイルシステム系 — ローカル実機（Windows 11）のみ対象
+
+> **⚠️ ローカル実機はWindows 11のため、`rm`・`find -delete` 等のLinuxコマンドはそもそも動作しない。Codespace内（`gh codespace ssh -c <name> "..."` 経由）ではクリーンアップを含め何でも自由に行って構わない。**
+
+ローカル実機で禁止されるWindows相当の操作:
+
+```powershell
+# ワークスペース外パスへの Remove-Item / del はすべて禁止
+```
+
+### Codespace インフラ系
+
+```
+gh codespace rebuild     # 環境再構築（devcontainerが変わりデータ消失の可能性）
+                         # ※ユーザーが明示的に指示した場合のみ実行可
+```
+
+### その他高リスク操作
+
+```
+git commit --amend --no-edit  # プッシュ済みコミットのamendは --force と組み合わせ必須になるため禁止
+gh api -X DELETE              # REST API経由の削除も禁止
+gh api --method DELETE        # 同上
+curl -X DELETE https://api.github.com/...  # curlによるGitHub API DELETE禁止
+```
+
+## 許可される代表コマンド
+
+```bash
+# gh 読み取り・確認
+gh * browse
+gh * checks
+gh * diff
+gh * list
+gh * logs
+gh * search
+gh * status
+gh * verify
+gh * view
+gh * watch
+gh * clone
+gh * download
+gh api *issues/*/comments*
+gh api *pulls/*/comments*
+gh api *pulls/*/reviews*
+
+# git
+git add
+git blame
+git branch
+git checkout
+git diff
+git fetch
+git log
+git ls-files
+git rev-parse
+git show
+git stash list
+git status
+git tag
+
+# Nix / lint / format
+nix build
+nix develop
+nix eval
+nix flake
+nix fmt
+nix search
+nix-fast-build
+nixfmt
+actionlint
+deadnix
+editorconfig-checker
+prettier
+shellcheck
+shfmt
+statix
+typos
+zizmor
+```
+
+## Codespace操作
+
+```bash
+gh codespace list
+gh codespace list --repo owner/repo
+gh codespace view -c <name>
+gh codespace logs -c <name> --tail 100
+gh codespace ports -c <name>
+gh codespace ssh -c <name> "<command>"
+gh codespace cp local-file.txt remote:~/path/ -c <name> -e
+gh codespace cp -r remote:/workspaces/repo/dist/ ./dist/ -c <name> -e
+gh codespace ports forward 8080:8080 -c <name>
+gh codespace ports visibility 8080:org -c <name>
+gh codespace stop -c <name>
+```
+
+- `gh codespace cp` が失敗する場合は、Codespaceが停止している可能性が高い。`gh codespace ssh -c <name> "echo started"` で起動を試す。
+- 壊れていると思った場合でも、禁止コマンドに該当する操作（例: `gh codespace delete`）は実行しない。ユーザーに相談する。
+
+## デバッグ・ビルド方針
+
+- Chrome MCPでテストする場合は、CodespaceでビルドしてWebassemblyをローカルへ転送してからテストする。
+- ソースを修正した場合は、ローカルで `apply_patch` を適用してから `gh codespace cp -e` でCodespaceへ転送し、Codespace上でビルドする。
+- ファイルの中身を応答に復唱しない。
+- スクリーンショットは対象エレメントだけで取る。初期実装であれば、フルサイズスクリーンショットをコンテキストに取り込んでも問題ない。もしcanvasを使用しており、ユーザーが詳細にバグを指定した場合は、ピクセル検査スクリプトを使う。
+- GitHub Pagesへ毎回デプロイしない。HTML変更や軽い確認はローカル/プレビューサーバーで高速に回す。
+- GitHub Actionsでデプロイする場合は、最終段階でまとめて行い、cache-bustする。
+- Actions完了待ちは実デプロイを見たいなら、次のコマンドで待つ: `gh run list --repo DaisukeDaisuke/?????? --branch main --limit 3` で対象runを確認し、`gh run watch <run-id> --repo DaisukeDaisuke/???? --exit-status` で終了まで待つ。
+- Codespaceでのbuildと構文チェックは本番Actionsほど重要ではない。軽い変更は本番環境で確認してよい。ただしビルドはリアルタイムで約5分かかるため、複数の問題をまとめて確認する。
+
+## コミットと同期
+
+- ローカルでのコミットは許可されている。この環境は、gpgによる自動署名が構成されており、AIが署名コミットを行うことは許可されてる(なりすまし対策であるため)
+- pushはAIが行うと失敗することがあるため、基本は人間が行う。pushが必要な場合は事前に確認する。強制pushは禁止。
+- ローカルコミットでGPGが落ちた場合のみ、GPG設定を変更せずに次の回避を試してよい:
+  1. `"C:\Program Files\GnuPG\bin\gpg-connect-agent.exe" /bye` で先に1回起動する(20秒間程度かかるので、完了待ちしない)
+  2. `"C:\Program Files\GnuPG\bin\gpg-agent.exe"` を200msづつ、遅延を入れながら5回同時起動する。自動終了やエラーは無視してよい。このとき標準出力は捨てる。
+  3. 20秒待ってからコミットを再試行する。
+  4. これでもコミットに失敗した場合は、ファイル変更だけで助けを求める。
+- GPG/SSHの再構成、鍵ファイル操作、認証情報の変更は禁止。
+
+### ローカルPHPテストサーバー
+
+```powershell
+(Start-Process -FilePath "D:\software\php-8.5.7-nts-Win32-vs17-x64\php.exe" -ArgumentList "-S localhost:8766" -WindowStyle Hidden -WorkingDirectory "C:\Users\owner\CLionProjects\deweb\public" -PassThru).Id
+```
+
+URL:
+
+```text
+http://localhost:8766/
+```
+
+## クリーンアップ
+
+- ポートフォワーディングは提出前に必ず停止する。
+- 停止できない・忘れた場合は、次をチャットで必ず明記してユーザーに伝えること。
+- Pythonサーバー、phpサーバーは止める。
+```bash
+gh codespace ports -c <codespace-name>
+# フォワードしているターミナルで Ctrl+C、またはプロセスを kill してください
+lsof -i :<port>
+kill <PID>
+```
+
+- Codespaceを起動した場合、タスク完了後に `gh codespace stop -c <name>` を実行する。
+
+## 作業前チェックリスト
+
+- [ ] コマンドに `delete` が含まれていないか
+- [ ] `rm` が含まれていないか（引数問わず禁止）
+- [ ] `git push` に `--force` / `-f` が付いていないか
+- [ ] `git reset --hard` が含まれていないか
+- [ ] `git clean` が含まれていないか
+- [ ] `gh repo archive` / `rename` / `transfer` が含まれていないか
+- [ ] `gh api` で `-X DELETE` または `--method DELETE` を使っていないか
+- [ ] `-e` フラグをユーザー入力と組み合わせていないか（シェルインジェクション）
+- [ ] デバッグ時にファイル内容を応答に復唱していないか
+- [ ] ポートフォワーディングを提出前に停止したか（または停止方法をチャットで明記したか）
+- [ ] Codespaceに転送したファイルは `apply_patch` → `cp -e` の手順を踏んだか
+- [ ] ホスト環境にソフトウェアを追加インストールしていないか
+- [ ] `sudo apt install` に `-y` を付けてログを `> /dev/null 2>&1` で捨てているか
+- [ ] タスク完了後に `gh codespace stop -c <name>` で停止したか
