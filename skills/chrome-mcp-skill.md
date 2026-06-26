@@ -11,6 +11,19 @@
 - Actions完了待ちは実デプロイを見たいなら、次のコマンドで待つ: `gh run list --repo DaisukeDaisuke/?????? --branch main --limit 3` で対象runを確認し、`gh run watch <run-id> --repo DaisukeDaisuke/???? --exit-status` で終了まで待つ。
 - Codespaceでのbuildと構文チェックは本番Actionsほど重要ではない。軽い変更は本番環境で確認してよい。ただしビルドはリアルタイムで約5分かかるため、複数の問題をまとめて確認する。
 
+### ローカルPHPテストサーバー
+
+テストの際は、ファイルを直接指定するか、ローカルphpサーバーを立ててそこにchrome mcpでアクセスする。
+建てたサーバーはいかなる理由があっても、提出時に停止すること(間違えて他プロセスをkillしないようにする)
+
+```powershell
+(Start-Process -FilePath "D:\software\php-8.5.7-nts-Win32-vs17-x64\php.exe" -ArgumentList "-S localhost:8766" -WindowStyle Hidden -WorkingDirectory "C:\Users\owner\CLionProjects\deweb\public" -PassThru).Id
+```
+
+```text
+http://localhost:8766/
+```
+
 ### Chrome MCPでのファイルアップロード
 
 - AI側からのファイルアップロードは、Chrome MCPのアップロード対象要素IDとアップロードツールを組み合わせる。
